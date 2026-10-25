@@ -5,7 +5,7 @@ Governed Data Records as HL7 v2.5.1 messages in ER7 encoding. A target mapper fo
 against its model and reports each one; this package says which segment and field each value goes to and writes the
 message. Outbound only. Apache 2.0.
 
-**Status:** 4.0.0 in development. Two models so far, from the FAIR Data Demo:
+**Status:** 4.0.1. Two models so far, from the FAIR Data Demo:
 
 | Model | ct_id | Message | Rules |
 |---|---|---|---|
