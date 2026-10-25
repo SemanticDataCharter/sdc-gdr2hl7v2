@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdc-gdr2hl7v2"
+version = "4.0.0"
+description = "Governed Data Records as HL7 v2.5.1 messages (ER7), through sdc-mapper: one site profile per model, every value reported."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Axius SDC, Inc." }]
+keywords = ["sdc", "semantic data charter", "governed data record", "hl7", "hl7v2", "oru", "mapping"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "sdc-mapper>=4.2,<5",     # the engine, the gate, the resolved record, mapping files
+    "hl7apy>=1.3.5",          # MIT; validates every message as HL7 v2.5.1, independently of the writer
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pyyaml>=6.0"]
+
+[project.entry-points."sdc_mapper.targets"]
+hl7v2 = "sdc_gdr2hl7v2:HL7v2Mapper"
+
+[project.urls]
+Repository = "https://github.com/SemanticDataCharter/sdc-gdr2hl7v2"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sdc_gdr2hl7v2 = ["mappings/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
