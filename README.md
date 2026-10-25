@@ -5,11 +5,12 @@ Governed Data Records as HL7 v2.5.1 messages in ER7 encoding. A target mapper fo
 against its model and reports each one; this package says which segment and field each value goes to and writes the
 message. Outbound only. Apache 2.0.
 
-**Status:** 4.0.2. Two models so far, from the FAIR Data Demo:
+**Status:** 4.0.3. Three models so far, from the FAIR Data Demo:
 
 | Model | ct_id | Message | Rules |
 |---|---|---|---|
-| NHANES Participant | `xy8upneajsb8vdcmnve01g6g` | ORU^R01 | 44 |
+| NHANES Participant 4.2.3 | `eehpfapwgvxtzdrofgstdcfs` | ORU^R01 | 44 |
+| NHANES Participant (4.2.0; its pregnancy answer codes are the NIH CDE record's, E-2026-10-01) | `xy8upneajsb8vdcmnve01g6g` | ORU^R01 | 44 |
 | NHANES Medication | `epbdfmvxc3gbh5f66hhb3o2m` | ORU^R01 | 18 |
 
 ## Use
@@ -113,5 +114,6 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-200 NHANES Participant and 200 NHANES Medication records (a seeded sample of the FAIR Data Demo's) are mapped, and
+200 NHANES Participant records on each model (the same participants), and 200 NHANES Medication records (a seeded
+sample of the FAIR Data Demo's) are mapped, and
 every message validated by hl7apy; Exceptional Values and refused mappings are exercised.

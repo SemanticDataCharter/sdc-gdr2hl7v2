@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.0.3 (2026-10-25)
+
+A site profile for NHANES Participant 4.2.3 (`eehpfapwgvxtzdrofgstdcfs`), the FAIR Data Demo's revision of NHANES
+Participant that composes the NIH CDE library's correction E-2026-10-01. The NIH CDE Repository's record for "Are you
+pregnant now?" (`LiUWCWluP`) bound each answer to the next one's LOINC code; on the 4.2.3 model the OBX-5 for that
+question is Yes `LA15173-0`, No `LA26683-5`, Unknown `LA4489-6`, where the 4.2.0 model's records send `LA26683-5` for
+Yes, `LA4489-6` for No and `LA15173-0` for Unknown.
+
+- `nhanes_participant_423-eehpfapwgvxtzdrofgstdcfs.yaml`, 44 rules, written by `tools/build_mapping.py` from
+  `tools/specs/nhanes_participant_423.py` (the 4.2.0 spec's rules: every label is the same).
+- A sample of 200 records on the 4.2.3 model, the same participants as the 4.2.0 sample; all map and validate.
+- The 4.2.0 model's site profile and sample stay: its records are published and keep their meaning as written.
+
 ## 4.0.2 (2026-10-25)
 
 Uses sdc-mapper 4.3.0's code reading (`sdc_mapper.codes`): the LOINC code a component links to and the code an
