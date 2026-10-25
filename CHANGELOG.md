@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.0.2 (2026-10-25)
+
+Uses sdc-mapper 4.3.0's code reading (`sdc_mapper.codes`): the LOINC code a component links to and the code an
+enumerated value is defined by are read by the core, and this package keeps only HL7 table 0396's names for the code
+systems (LN, SCT, NCIT). No change to any output: every sample message is byte-identical, and every value's class in
+the report is the same. Requires sdc-mapper 4.3.
+
 ## 4.0.1 (2026-10-25)
 
 Rebuilt with the release job's pip pinned by hash: CI and the release workflow install pip 26.2.2 from a hash-pinned
