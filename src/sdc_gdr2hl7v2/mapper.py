@@ -29,8 +29,9 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from decimal import Decimal
 
-from sdc_mapper import (DECLARED, DEGRADED, LOOKUP, LOST, NOT_REPRESENTABLE, PRESERVED, EVRule, IncompleteMapping,
-                        MapResult, MappingError, ValueOutcome)
+from sdc_mapper import (DECLARED, DEGRADED, EXACT_MATCH, LOINC, LOOKUP, LOST, NCIT, NOT_REPRESENTABLE, PRESERVED,
+                        SNOMED_CT, EVRule, IncompleteMapping, MapResult, MappingError, ValueOutcome, code_of,
+                        linked_code)
 from sdcreader.record import EXCEPTIONAL_VALUES
 
 from . import __version__
@@ -39,13 +40,8 @@ from .validate import errors as validation_errors
 
 VERSION = "2.5.1"
 LOCAL = "99SDC"          # HL7 table 0396: a local coding system (99zzz); the code is the component's identifier
-EXACT = "http://www.w3.org/2004/02/skos/core#exactMatch"
-LOINC = re.compile(r"^https?://loinc\.org/([0-9A-Za-z-]+)/?$")
-SYSTEMS = [              # the code a value's binding names, and its HL7 table 0396 coding system
-    (LOINC, "LN"),
-    (re.compile(r"^https?://snomed\.info/(?:id|sct)/(\d+)/?$"), "SCT"),
-    (re.compile(r"^https?://purl\.obolibrary\.org/obo/NCIT_(C\d+)$"), "NCIT"),
-]
+#: The code systems the model names (sdc_mapper.codes), as HL7 table 0396 coding systems.
+CODING_SYSTEMS = {LOINC: "LN", SNOMED_CT: "SCT", NCIT: "NCIT"}
 NOT_ASKED = "NASK"
 OTHER_EVS = tuple(c for c in EXCEPTIONAL_VALUES if c != NOT_ASKED)
 #: What an observation's OBX-11 (HL7 table 0085) says for each ISO 21090 code.
@@ -106,19 +102,15 @@ def _text(v) -> str | None:
 
 
 def _coded(iri: str | None) -> tuple[str, str] | None:
-    for pattern, system in SYSTEMS:
-        m = pattern.match(iri or "")
-        if m:
-            return m.group(1), system
-    return None
+    """The code an IRI names and its HL7 coding system, for the code systems v2 writes."""
+    ref = code_of(iri)
+    return (ref.code, CODING_SYSTEMS[ref.system]) if ref and ref.system in CODING_SYSTEMS else None
 
 
 def _loinc_of(component) -> str | None:
-    for iri in (component.links or {}).get(EXACT, []):
-        m = LOINC.match(iri)
-        if m:
-            return m.group(1)
-    return None
+    """The LOINC code the model binds a component to (skos:exactMatch)."""
+    ref = linked_code(component, LOINC, (EXACT_MATCH,))
+    return ref.code if ref else None
 
 
 VALUE_TYPE = {"decimal": "NM", "integer": "NM", "string": "ST", "token": "CWE", "boolean": "CWE", "link": "ST"}
