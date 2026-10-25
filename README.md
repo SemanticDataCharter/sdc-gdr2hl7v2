@@ -27,13 +27,14 @@ Through sdc-mapper's MCP server and CLI the mapper is the target `hl7v2`.
 
 ## The target and its terms
 
-**HL7 Version 2.5.1**, ER7 encoding. HL7 makes its standards available at no cost under its IP policy
-(http://www.hl7.org/legal/ippolicy.cfm): those who register and agree to the policy may read and use the specified
-material to implement it, and develop and sell products and services that implement, but do not directly
-incorporate, the specified material. This package implements HL7 v2.5.1 and incorporates none of its text: no tables,
-no segment definitions, no chapter content. It writes the handful of codes a message needs (`ORU^R01`, result status
-`F`, `N`, `X`, coding system identifiers such as `LN`, `SCT`, `I10C`, `UCUM`), and names the HL7 tables they come
-from. The terms were read on 25 October 2026.
+**HL7 Version 2.5.1**, ER7 encoding. Since 1 April 2013 HL7 International has made its core standards, HL7 v2
+among them, available free of charge under a click-through license agreement (http://www.hl7.org/legal/ippolicy.cfm).
+HL7 keeps the copyright, and use depends on who the user is: a non-member may view, evaluate and use the standards to
+build and sell products that implement HL7 v2, but may not copy or redistribute the text of the specifications, in
+whole or in part. This package implements HL7 v2.5.1 and incorporates none of its text: no tables, no segment
+definitions, no chapter content. It writes the handful of codes a message needs (`ORU^R01`, result status `F`, `N`,
+`X`, coding system identifiers such as `LN`, `SCT`, `I10C`, `UCUM`), and names the HL7 tables they come from. The
+terms were confirmed on 25 October 2026.
 
 **Validation is independent of the writer.** Every message is parsed and validated by
 [hl7apy](https://github.com/crs4/hl7apy) (MIT) at its strict level against its own HL7 v2.5.1 message structures:
