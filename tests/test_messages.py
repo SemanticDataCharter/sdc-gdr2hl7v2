@@ -17,6 +17,7 @@ from sdc_gdr2hl7v2.validate import errors
 
 ROOT = Path(__file__).resolve().parents[1]
 PARTICIPANT = ("nhanes-participant", "xy8upneajsb8vdcmnve01g6g")
+PARTICIPANT_423 = ("nhanes-participant-4.2.3", "eehpfapwgvxtzdrofgstdcfs")   # E-2026-10-01 corrected
 MEDICATION = ("nhanes-medication", "epbdfmvxc3gbh5f66hhb3o2m")
 SDC4 = "https://semanticdatacharter.com/ns/sdc4/"
 
@@ -39,7 +40,7 @@ def segments(r):
     return [s.split("|") for s in r.files["message.hl7"].decode().split("\r") if s]
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT, MEDICATION], ids=lambda d: d[0])
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, MEDICATION], ids=lambda d: d[0])
 def test_every_record_is_a_conformant_message(engine, doc):
     for f in records(doc):
         r = run(engine, doc, f.read_bytes())
@@ -165,3 +166,24 @@ def test_a_units_symbol_outside_the_table_is_an_error(engine, tmp_path):
     p.write_text(yaml.safe_dump(doc, sort_keys=False))
     r = run(engine, MEDICATION, records(MEDICATION)[0].read_bytes(), load_mapping(p))
     assert r.outcome == ERROR and "units table" in r.errors[0]["reason"]
+
+
+def pregnancy_answers(engine, doc):
+    """Every "Are you pregnant now?" OBX-5 in the sample, as (code, text)."""
+    out = set()
+    for f in records(doc):
+        for seg in segments(run(engine, doc, f.read_bytes())):
+            if seg[0] == "OBX" and "Are you pregnant now?" in seg[3]:
+                code, text, system = seg[5].split("^")[:3]
+                assert system == "LN"
+                out.add((code, text))
+    return out
+
+
+def test_the_corrected_model_sends_the_right_loinc_answer_codes(engine):
+    """E-2026-10-01: the NIH CDE record bound each answer to the next one's LOINC code. NHANES Participant 4.2.3
+    composes the NIH CDE library's correction; the 4.2.0 model, kept for its published records, still carries the
+    source's codes."""
+    right = {("LA15173-0", "Yes"), ("LA26683-5", "No"), ("LA4489-6", "Unknown")}
+    assert pregnancy_answers(engine, PARTICIPANT_423) == right
+    assert pregnancy_answers(engine, PARTICIPANT).isdisjoint(right)
