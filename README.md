@@ -5,12 +5,13 @@ Governed Data Records as HL7 v2.5.1 messages in ER7 encoding. A target mapper fo
 against its model and reports each one; this package says which segment and field each value goes to and writes the
 message. Outbound only. Apache 2.0.
 
-**Status:** 4.0.3. Three models so far, from the FAIR Data Demo:
+**Status:** 4.0.4. Four models so far, from the FAIR Data Demo:
 
 | Model | ct_id | Message | Rules |
 |---|---|---|---|
-| NHANES Participant 4.2.3 | `eehpfapwgvxtzdrofgstdcfs` | ORU^R01 | 44 |
-| NHANES Participant (4.2.0; its pregnancy answer codes are the NIH CDE record's, E-2026-10-01) | `xy8upneajsb8vdcmnve01g6g` | ORU^R01 | 44 |
+| NHANES Participant 4.2.4 | `tp5pg0u4dasqarie0b3ujn2u` | ORU^R01 | 44 |
+| NHANES Participant 4.2.3 (retired; value bindings corrected in 4.2.4, E-2026-10-03) | `eehpfapwgvxtzdrofgstdcfs` | ORU^R01 | 44 |
+| NHANES Participant 4.2.0 (retired; its pregnancy answer codes are the NIH CDE record's, E-2026-10-01) | `xy8upneajsb8vdcmnve01g6g` | ORU^R01 | 44 |
 | NHANES Medication | `epbdfmvxc3gbh5f66hhb3o2m` | ORU^R01 | 18 |
 
 ## Use
@@ -19,7 +20,7 @@ message. Outbound only. Apache 2.0.
 from sdc_mapper import Engine, load_mapping
 from sdc_gdr2hl7v2 import HL7v2Mapper, mapping_path
 
-result = Engine().map_record(xml, HL7v2Mapper(), load_mapping(mapping_path("xy8upneajsb8vdcmnve01g6g")))
+result = Engine().map_record(xml, HL7v2Mapper(), load_mapping(mapping_path("tp5pg0u4dasqarie0b3ujn2u")))
 result.files["message.hl7"]      # ER7, segments separated by carriage returns
 result.report                    # every value: lookup, declared or not representable, and why
 ```
