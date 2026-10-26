@@ -1,0 +1,104 @@
+# NHANES Participant 4.2.4 (FAIR Data Demo) to HL7 v2.5.1 ORU^R01
+# Written by tools/build_mapping.py from tools/specs/nhanes_participant_424.py; labels in the comments.
+mapping:
+  id: nhanes-participant-4.2.4-hl7v2-2.5.1
+  version: 1
+  author: Axius SDC, Inc.
+  date: '2026-10-25'
+  description: 'The NHANES Participant 4.2.4 model''s values in an HL7 v2.5.1 ORU^R01 message: the participant in PID, each
+    section an OBR group, each value an OBX. OBX-3 is the LOINC code the model binds where it binds one.'
+model:
+  ct_id: tp5pg0u4dasqarie0b3ujn2u
+  schema_sha256: ff6d7b578e875156e0f1d3047ac29677cf78b728fb6ec4a04b53df00e7cc78c9
+target:
+  name: HL7 Version 2
+  version: 2.5.1
+rules:
+  # NHANES Participant Governed Record
+  - {cluster: qsegrqlbnrpyedsuyh602l7p, to: MSH, attributes: {MSH-3: SDC-GDR2HL7V2, MSH-4: FAIR Data Demo, MSH-11: T, PID-5: '""', OBX-11: F}}
+  # Audit Event
+  - {cluster: t2tvd3wylxrstdeu5aw6gkw1, to: '-', transform: omit, reason: 'the record''s audit event: an HL7 v2 message names its sending application, not the audit of the record'}
+  # PROV Activity
+  - {cluster: vmikfu0irht9fmq7q02t3oqs, to: '-', transform: omit, reason: 'the record''s provenance: HL7 v2 has no place for it'}
+  # PROV Agent
+  - {cluster: c179ilk2ns15cd5rzzdfd6f6, to: '-', transform: omit, reason: 'the record''s provenance: HL7 v2 has no place for it'}
+  # Respondent Sequence Number (SEQN)
+  - {component: uto4zszvpicva38wx77knz5y, to: PID-3, transform: format, format: '{}^^^NHANES^PI'}
+  # NHANES Participant
+  - {cluster: vianv75qjtm1agy1mhyctpvo, to: .}
+  # NHANES Blood Pressure
+  - {cluster: k8t5396w5kh1zzf6vhp4ola2, to: OBR}
+  # NHANES Demographics
+  - {cluster: mcwxopvl79am1nwidvdhh6k1, to: OBR}
+  # NHANES Laboratory Results
+  - {cluster: g2voalw3ybm3pmu8uwkk4xzn, to: OBR}
+  # NHANES Medical Conditions
+  - {cluster: hmaeg366kmkc99g6gdsejufy, to: OBR}
+  # NHANES Physical Functioning
+  - {cluster: wm4o1tvmo89r0wn7ailb51v2, to: OBR}
+  # NHANES Smoking
+  - {cluster: u3nopo5pxqb1dwwk3u0fyp6e, to: OBR}
+  # NHANES Survey Design
+  - {cluster: odbroobvrx8dsx7ay24toth7, to: OBR}
+  # Blood Pressure Reading 1
+  - {cluster: x69rhb0rc8sn1e6qkirhcnum, to: OBR, order: 1}
+  # Blood Pressure Reading 2
+  - {cluster: so1r0ndetw0artjnbfirxd5y, to: OBR, order: 2}
+  # Blood Pressure Reading 3
+  - {cluster: izygcyh1wupij0st4iy0ir1k, to: OBR, order: 3}
+  # Blood Pressure
+  - {cluster: wyk9e1d74y5xrgv97o9y75ib, to: .}
+  # Chronic Condition Indicators
+  - {cluster: bq0dx31j0dzk5dsof8aoxfqk, to: .}
+  # Body Site (SNOMED CT)
+  - {cluster: r5koa840csi3zcewts0uo0r5, to: OBX, attributes: {OBX-2: CWE, OBX-5.3: SCT}}
+  # Body Site Code (SNOMED CT)
+  - {component: vi7yvq0b8nler3g6alaamrzm, to: OBX-5.1, transform: copy}
+  # Code Display Text (within Body Site (SNOMED CT))
+  - {component: eo5tlfr0576ypknys5alvcn0, within: [r5koa840csi3zcewts0uo0r5], to: OBX-5.2, transform: copy}
+  # Code System: SNOMED CT
+  - {component: q75pzzv36or6dxgjrrbvmun5, to: OBX-5.3, transform: code, table: {'http://snomed.info/sct': SCT}, on_miss: omit}
+  # Observation Status
+  - {component: q9vmn1cvdclgr757aer5v1rg, to: OBR-25, transform: code, table: {registered: I, preliminary: P, final: F, amended: C, corrected: C, cancelled: X}, on_miss: omit, also: [{to: OBX*-11, transform: code, table: {registered: I, preliminary: P, final: F, amended: C, corrected: C, cancelled: X, entered-in-error: W}, on_miss: omit}]}
+  # Observation Date Time
+  - {component: dkyyj01tksb7h7akq2w7moum, to: OBR-7, transform: copy, also: [{to: OBX*-14, transform: copy}]}
+  # Administrative Gender
+  - {component: gxzbm758mhdz51xd4bawlfhh, to: PID-8, transform: code, table: {female: F, male: M, other: O, unknown: U}}
+  # Diastolic Blood Pressure
+  - {component: s3qzwxxz9b42lcd2wryok8jd, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Systolic Blood Pressure
+  - {component: r1ve12xphsb5hu2yjmhksw5h, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Maximum Inflation Level (BPXML1)
+  - {component: ujpg1m8po18ynniqpwhltxld, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Heart Rate
+  - {component: oy0jwif5pi86xtimzxzhapvu, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Age in Months at Screening (RIDAGEMN)
+  - {component: qg7or0c34grde4gprzwifukh, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Total Number of People in the Household (DMDHHSIZ)
+  - {component: qbp08a1gscple2aiuiwyfz2s, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Age
+  - {component: wuvdeiwoe5bna7nlhcl1c4h9, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Ratio of Family Income to Poverty (INDFMPIR)
+  - {component: dwd4pk56w0pjchsyzl81fzya, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Age Started Smoking Cigarettes Regularly (SMD030)
+  - {component: wlfal1j4vnwy76szun72madm, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Average Cigarettes per Day, Past 30 Days (SMD650)
+  - {component: v9wj86qu70lda3tt2dh299wz, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Masked Variance Pseudo-PSU (SDMVPSU)
+  - {component: vxldr9jodr9eu5uol3g4c189, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Masked Variance Pseudo-Stratum (SDMVSTRA)
+  - {component: yksuiithtrif7jdrjpi4o7eg, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Full Sample 2 Year Interview Weight (WTINT2YR)
+  - {component: zmw9684hejwjsfcg6t71jkgl, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Full Sample 2 Year MEC Exam Weight (WTMEC2YR)
+  - {component: w7xdjmfmoev4of0gd76mtnto, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # every other XdQuantity
+  - {sdc_type: XdQuantity, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # every other XdCount
+  - {sdc_type: XdCount, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # every other XdToken
+  - {sdc_type: XdToken, to: OBX, transform: copy}
+  # every other XdString
+  - {sdc_type: XdString, to: OBX, transform: copy}
+  # every other XdTemporal
+  - {sdc_type: XdTemporal, to: OBX, transform: copy}

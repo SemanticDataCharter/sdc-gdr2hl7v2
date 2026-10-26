@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.0.4 (2026-10-26)
+
+A site profile for NHANES Participant 4.2.4 (`tp5pg0u4dasqarie0b3ujn2u`), the FAIR Data Demo's revision whose value
+bindings name codes their terminologies confirm (its E-2026-10-03). For the same participant, OBX-5 now carries:
+
+| Observation | 4.2.3 | 4.2.4 |
+|---|---|---|
+| Difficulty scale (PFQ061B to PFQ061M), "No difficulty" | `C17998` (NCIt Unknown) | `C121736` Can Do Without Any Difficulty |
+| Pregnancy Status at Exam, "Not pregnant at exam" | `C25191` (NCIt Person Name) | `C82475` Not Pregnant |
+| Citizenship Status, "Citizen by birth or naturalization" | `C41130` (NCIt Significant) | `C90516` Citizen |
+| Race/Hispanic Origin, "Mexican American" | `C67175` (NCIt DBVE-PC Regimen) | `C67114` Mexican American |
+| Education, "College graduate or above" | `C39303` (NCIt Active Funded Research Project) | `C159746` College Completion |
+
+Where no concept says exactly what a value says ("Not a citizen of the US", "Less than 9th grade", "Do not do this
+activity"), the 4.2.4 model defines the value by the NHANES codebook page, and OBX-5 carries its text with no identifier
+and no coding system: a codebook page is not a code. A new test holds every participant sample to that, and to every
+coded OBX-5 being a LOINC, SNOMED CT or NCIt code under its own system.
+
+- `nhanes_participant_424-tp5pg0u4dasqarie0b3ujn2u.yaml`, 44 rules, from `tools/specs/nhanes_participant_424.py`
+  (the 4.2.0 spec's rules: every label is the same).
+- `samples/nhanes-participant-4.2.4/`: the model's schema and 200 records, the same participants as the 4.2.3 sample.
+- The 4.2.0 and 4.2.3 mappings and samples stay, for records made on those models; both models are retired.
+
 ## 4.0.3 (2026-10-25)
 
 A site profile for NHANES Participant 4.2.3 (`eehpfapwgvxtzdrofgstdcfs`), the FAIR Data Demo's revision of NHANES

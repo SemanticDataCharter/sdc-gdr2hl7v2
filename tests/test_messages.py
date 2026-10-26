@@ -18,6 +18,7 @@ from sdc_gdr2hl7v2.validate import errors
 ROOT = Path(__file__).resolve().parents[1]
 PARTICIPANT = ("nhanes-participant", "xy8upneajsb8vdcmnve01g6g")
 PARTICIPANT_423 = ("nhanes-participant-4.2.3", "eehpfapwgvxtzdrofgstdcfs")   # E-2026-10-01 corrected
+PARTICIPANT_424 = ("nhanes-participant-4.2.4", "tp5pg0u4dasqarie0b3ujn2u")   # E-2026-10-03 corrected value bindings
 MEDICATION = ("nhanes-medication", "epbdfmvxc3gbh5f66hhb3o2m")
 SDC4 = "https://semanticdatacharter.com/ns/sdc4/"
 
@@ -40,7 +41,7 @@ def segments(r):
     return [s.split("|") for s in r.files["message.hl7"].decode().split("\r") if s]
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, MEDICATION], ids=lambda d: d[0])
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, MEDICATION], ids=lambda d: d[0])
 def test_every_record_is_a_conformant_message(engine, doc):
     for f in records(doc):
         r = run(engine, doc, f.read_bytes())
@@ -186,4 +187,50 @@ def test_the_corrected_model_sends_the_right_loinc_answer_codes(engine):
     source's codes."""
     right = {("LA15173-0", "Yes"), ("LA26683-5", "No"), ("LA4489-6", "Unknown")}
     assert pregnancy_answers(engine, PARTICIPANT_423) == right
+    assert pregnancy_answers(engine, PARTICIPANT_424) == right
     assert pregnancy_answers(engine, PARTICIPANT).isdisjoint(right)
+
+
+def coded_values(engine, doc) -> dict[tuple[str, str], str]:
+    """(SEQN, observation label) -> OBX-5, for every coded observation of the sample."""
+    import re
+    out = {}
+    for f in records(doc):
+        xml = f.read_bytes()
+        seqn = re.search(rb"SEQN=(\d+)", xml).group(1).decode()
+        for seg in segments(run(engine, doc, xml)):
+            if seg[0] == "OBX" and seg[2] == "CWE" and "^" in seg[3]:
+                out[(seqn, seg[3].split("^")[1])] = seg[5]
+    return out
+
+
+def test_the_4_2_4_model_sends_the_codes_its_terminologies_confirm(engine):
+    """E-2026-10-03 (the FAIR Data Demo's SOURCE-ERRATA.md): 4.2.3 bound every level of the difficulty scale to NCIt
+    C17998 Unknown, both pregnancy-at-exam answers to C25191, citizenship to C41130 and Mexican American to C67175. The
+    two samples hold the same participants."""
+    old, new = coded_values(engine, PARTICIPANT_423), coded_values(engine, PARTICIPANT_424)
+    assert old.keys() == new.keys()
+    assert new[("100913", "Difficulty Lifting or Carrying (PFQ061E)")] == "C121736^No difficulty^NCIT"
+    assert old[("100913", "Difficulty Lifting or Carrying (PFQ061E)")] == "C17998^No difficulty^NCIT"
+    assert new[("100913", "Pregnancy Status at Exam (RIDEXPRG)")] == "C82475^Not pregnant at exam^NCIT"
+    assert new[("100913", "Citizenship Status (DMDCITZN)")] == "C90516^Citizen by birth or naturalization^NCIT"
+    assert new[("93946", "Race/Hispanic Origin with NH Asian (RIDRETH3)")] == "C67114^Mexican American^NCIT"
+    assert not {v.split("^")[0] for v in new.values()} & {"C25191", "C41130", "C67175", "C39303"}
+    assert {v for v in new.values() if v.startswith("C17998^")} <= {"C17998^Cannot ascertain if pregnant at exam^NCIT"}
+
+
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424], ids=lambda d: d[0])
+def test_a_value_defined_by_a_codebook_is_sent_as_text_never_as_a_code(engine, doc):
+    """A value the model defines by an agency codebook page (DEMO_J.htm#DMDCITZN) carries no code: OBX-5 is its text,
+    with no identifier and no coding system. A coded OBX-5 is a LOINC, SNOMED CT or NCIt code under its own system."""
+    import re
+    systems = {"LN": re.compile(r"^(LA)?[0-9]+-[0-9]$"), "SCT": re.compile(r"^[0-9]+$"), "NCIT": re.compile(r"^C[0-9]+$")}
+    for value in coded_values(engine, doc).values():
+        ident, text, system = (value.split("^") + ["", "", ""])[:3]
+        assert text and "://" not in value, value
+        if ident or system:
+            assert system in systems and systems[system].match(ident), value
+    texts = [v for v in coded_values(engine, doc).values() if v.startswith("^")]
+    if doc is PARTICIPANT_424:
+        assert "^Not a citizen of the US" in texts and "^Do not do this activity" in texts
+
