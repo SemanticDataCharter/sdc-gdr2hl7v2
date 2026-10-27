@@ -22,6 +22,7 @@ PARTICIPANT_424 = ("nhanes-participant-4.2.4", "tp5pg0u4dasqarie0b3ujn2u")   # E
 MEDICATION = ("nhanes-medication", "epbdfmvxc3gbh5f66hhb3o2m")
 PARTICIPANT_430 = ("nhanes-participant-4.3.0", "drjvqb171q9pqwcdq6nxxrr4")   # FAIR 4.3.0: refused / don't know as EVs
 MEDICATION_430 = ("nhanes-medication-4.3.0", "plc9gto1kzy244g1r2op257f")     # FAIR 4.3.0: EVs, NHANES prevention codes
+PARTICIPANT_431 = ("nhanes-participant-4.3.1", "fafj69kdii37997sy7dpsz13")   # FAIR 4.3.1: NIH CDE answers without exact-match claims
 SDC4 = "https://semanticdatacharter.com/ns/sdc4/"
 
 
@@ -43,14 +44,14 @@ def segments(r):
     return [s.split("|") for s in r.files["message.hl7"].decode().split("\r") if s]
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, MEDICATION, PARTICIPANT_430, MEDICATION_430],
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, MEDICATION, PARTICIPANT_430, MEDICATION_430, PARTICIPANT_431],
                          ids=lambda d: d[0])
 def test_every_record_is_a_conformant_message(engine, doc):
     for f in records(doc):
         r = run(engine, doc, f.read_bytes())
         assert r.outcome == VALID, (f.name, r.errors)
         assert not errors(r.files["message.hl7"].decode()), f.name
-        allowed = {LOOKUP, DECLARED, NOT_REPRESENTABLE} | ({DEGRADED} if doc in (PARTICIPANT_430, MEDICATION_430) else set())
+        allowed = {LOOKUP, DECLARED, NOT_REPRESENTABLE} | ({DEGRADED} if doc in (PARTICIPANT_430, MEDICATION_430, PARTICIPANT_431) else set())
         assert {v["class"] for v in r.report.values} <= allowed
 
 
@@ -223,7 +224,7 @@ def test_the_4_2_4_model_sends_the_codes_its_terminologies_confirm(engine):
     assert {v for v in new.values() if v.startswith("C17998^")} <= {"C17998^Cannot ascertain if pregnant at exam^NCIT"}
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, PARTICIPANT_430], ids=lambda d: d[0])
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, PARTICIPANT_430, PARTICIPANT_431], ids=lambda d: d[0])
 def test_a_value_defined_by_a_codebook_is_sent_as_text_never_as_a_code(engine, doc):
     """A value the model defines by an agency codebook page (DEMO_J.htm#DMDCITZN) carries no code: OBX-5 is its text,
     with no identifier and no coding system. A coded OBX-5 is a LOINC, SNOMED CT or NCIt code under its own system."""
@@ -242,7 +243,7 @@ def test_a_value_defined_by_a_codebook_is_sent_as_text_never_as_a_code(engine, d
 
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT_430, MEDICATION_430], ids=lambda d: d[0])
+@pytest.mark.parametrize("doc", [PARTICIPANT_430, MEDICATION_430, PARTICIPANT_431], ids=lambda d: d[0])
 def test_a_refused_or_unknown_answer_is_never_sent_as_a_value(engine, doc):
     """FAIR 4.3.0: every observation whose answer is an Exceptional Value has OBX-5 empty, OBX-11 X and an NTE naming
     the ISO 21090 code; the samples carry some."""
@@ -282,3 +283,27 @@ def test_an_nhanes_prevention_code_goes_out_in_a_local_system_never_icd_10_cm(en
                 assert system == "99NHANES", (f.name, "|".join(s))
                 seen += 1
     assert seen
+
+
+
+def test_431_messages_match_430_apart_from_identifiers(engine):
+    """FAIR 4.3.1 changes only the NIH CDE answers' concept links, which no OBX reads: for the same participants, every
+    4.3.1 message is the 4.3.0 one with the model's identifiers in place of the old ones."""
+    import re
+    def ids(ct):
+        return re.findall(r"\b[a-z0-9]{24}\b", mapping_path(ct).read_text())
+    alias = dict(zip(ids(PARTICIPANT_431[1]), ids(PARTICIPANT_430[1])))
+    seqn = re.compile(rb"<label>Respondent Sequence Number \(SEQN\)</label>\s*<xdstring-value>([^<]+)</xdstring-value>")
+    def msgs(doc):
+        out = {}
+        for f in records(doc):
+            x = f.read_bytes()
+            m = run(engine, doc, x).files["message.hl7"].decode()
+            m = re.sub(r"\b[a-z0-9]{24}\b", lambda k: alias.get(k.group(0), k.group(0)), m)
+            m = re.sub(r"(MSH(?:\|[^|\r]*){9})", "MSH", m)                    # control id and timestamp
+            out[seqn.search(x).group(1)] = [s for s in m.split("\r") if s and not s.startswith("MSH")]
+        return out
+    old, new = msgs(PARTICIPANT_430), msgs(PARTICIPANT_431)
+    assert set(old) == set(new)
+    differing = {k for k in old if [re.sub(r"\b[a-z0-9]{24}\b", "ID", s) for s in old[k]] != [re.sub(r"\b[a-z0-9]{24}\b", "ID", s) for s in new[k]]}
+    assert not differing, sorted(differing)[:3]
