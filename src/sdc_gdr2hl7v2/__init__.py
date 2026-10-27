@@ -2,13 +2,13 @@
 
     from sdc_mapper import Engine, load_mapping
     from sdc_gdr2hl7v2 import HL7v2Mapper, mapping_path
-    result = Engine().map_record(xml, HL7v2Mapper(), load_mapping(mapping_path("tp5pg0u4dasqarie0b3ujn2u")))
+    result = Engine().map_record(xml, HL7v2Mapper(), load_mapping(mapping_path("drjvqb171q9pqwcdq6nxxrr4")))
 
 One mapping file (a site profile) per model, in `mappings/`. Registered with sdc-mapper as the target `hl7v2`.
 """
 from pathlib import Path
 
-__version__ = "4.0.4"
+__version__ = "4.0.5"
 
 MAPPINGS = Path(__file__).with_name("mappings")
 
