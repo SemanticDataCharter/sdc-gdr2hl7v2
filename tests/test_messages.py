@@ -20,6 +20,8 @@ PARTICIPANT = ("nhanes-participant", "xy8upneajsb8vdcmnve01g6g")
 PARTICIPANT_423 = ("nhanes-participant-4.2.3", "eehpfapwgvxtzdrofgstdcfs")   # E-2026-10-01 corrected
 PARTICIPANT_424 = ("nhanes-participant-4.2.4", "tp5pg0u4dasqarie0b3ujn2u")   # E-2026-10-03 corrected value bindings
 MEDICATION = ("nhanes-medication", "epbdfmvxc3gbh5f66hhb3o2m")
+PARTICIPANT_430 = ("nhanes-participant-4.3.0", "drjvqb171q9pqwcdq6nxxrr4")   # FAIR 4.3.0: refused / don't know as EVs
+MEDICATION_430 = ("nhanes-medication-4.3.0", "plc9gto1kzy244g1r2op257f")     # FAIR 4.3.0: EVs, NHANES prevention codes
 SDC4 = "https://semanticdatacharter.com/ns/sdc4/"
 
 
@@ -41,13 +43,15 @@ def segments(r):
     return [s.split("|") for s in r.files["message.hl7"].decode().split("\r") if s]
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, MEDICATION], ids=lambda d: d[0])
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, MEDICATION, PARTICIPANT_430, MEDICATION_430],
+                         ids=lambda d: d[0])
 def test_every_record_is_a_conformant_message(engine, doc):
     for f in records(doc):
         r = run(engine, doc, f.read_bytes())
         assert r.outcome == VALID, (f.name, r.errors)
         assert not errors(r.files["message.hl7"].decode()), f.name
-        assert {v["class"] for v in r.report.values} <= {LOOKUP, DECLARED, NOT_REPRESENTABLE}
+        allowed = {LOOKUP, DECLARED, NOT_REPRESENTABLE} | ({DEGRADED} if doc in (PARTICIPANT_430, MEDICATION_430) else set())
+        assert {v["class"] for v in r.report.values} <= allowed
 
 
 def test_the_same_record_gives_the_same_bytes(engine):
@@ -219,13 +223,15 @@ def test_the_4_2_4_model_sends_the_codes_its_terminologies_confirm(engine):
     assert {v for v in new.values() if v.startswith("C17998^")} <= {"C17998^Cannot ascertain if pregnant at exam^NCIT"}
 
 
-@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424], ids=lambda d: d[0])
+@pytest.mark.parametrize("doc", [PARTICIPANT, PARTICIPANT_423, PARTICIPANT_424, PARTICIPANT_430], ids=lambda d: d[0])
 def test_a_value_defined_by_a_codebook_is_sent_as_text_never_as_a_code(engine, doc):
     """A value the model defines by an agency codebook page (DEMO_J.htm#DMDCITZN) carries no code: OBX-5 is its text,
     with no identifier and no coding system. A coded OBX-5 is a LOINC, SNOMED CT or NCIt code under its own system."""
     import re
     systems = {"LN": re.compile(r"^(LA)?[0-9]+-[0-9]$"), "SCT": re.compile(r"^[0-9]+$"), "NCIT": re.compile(r"^C[0-9]+$")}
     for value in coded_values(engine, doc).values():
+        if not value:
+            continue   # an Exceptional Value: OBX-5 empty, OBX-11 X (test_a_refused_or_unknown_answer_is_never_sent_as_a_value)
         ident, text, system = (value.split("^") + ["", "", ""])[:3]
         assert text and "://" not in value, value
         if ident or system:
@@ -234,3 +240,45 @@ def test_a_value_defined_by_a_codebook_is_sent_as_text_never_as_a_code(engine, d
     if doc is PARTICIPANT_424:
         assert "^Not a citizen of the US" in texts and "^Do not do this activity" in texts
 
+
+
+@pytest.mark.parametrize("doc", [PARTICIPANT_430, MEDICATION_430], ids=lambda d: d[0])
+def test_a_refused_or_unknown_answer_is_never_sent_as_a_value(engine, doc):
+    """FAIR 4.3.0: every observation whose answer is an Exceptional Value has OBX-5 empty, OBX-11 X and an NTE naming
+    the ISO 21090 code; the samples carry some."""
+    seen = 0
+    for f in records(doc):
+        segs = segments(run(engine, doc, f.read_bytes()))
+        for i, s in enumerate(segs):
+            if s[0] == "OBX" and len(s) > 11 and s[11] == "X":
+                seen += 1
+                assert s[5] == "", (f.name, "|".join(s))
+                assert segs[i + 1][0] == "NTE" and "ISO 21090 null flavor" in segs[i + 1][3], f.name
+    assert seen, "the sample carries Exceptional Values"
+
+
+def test_an_exceptional_code_in_a_coded_cluster_sends_no_partial_answer(engine):
+    """4.0.5: a medication reason NHANES records as unknown, refused or don't know (55555, 77777, 99999) was sent as
+    `^^I10C` with status F, an empty ICD-10-CM answer; it is OBX-5 empty, OBX-11 X, as any exceptional answer."""
+    seen = 0
+    for f in records(MEDICATION_430):
+        for s in segments(run(engine, MEDICATION_430, f.read_bytes())):
+            if s[0] == "OBX" and s[2] == "CWE":
+                assert not (s[5].startswith("^") and s[5].endswith("I10C")), (f.name, "|".join(s))
+                seen += s[3].split("^")[1:2] == ["Diagnosis (ICD-10-CM)"] and s[11] == "X"
+    assert seen
+
+
+def test_an_nhanes_prevention_code_goes_out_in_a_local_system_never_icd_10_cm(engine):
+    """NHANES's prevention reason codes (I21.P, prevent heart attack) are not ICD-10-CM: 99NHANES, never I10C."""
+    import re
+    seen = 0
+    for f in records(MEDICATION_430):
+        for s in segments(run(engine, MEDICATION_430, f.read_bytes())):
+            if s[0] != "OBX" or s[2] != "CWE":
+                continue
+            code, _, system = (s[5].split("^") + ["", "", ""])[:3]
+            if re.fullmatch(r"[A-TV-Z][0-9][0-9AB]\.[0-9A-TV-Z]{0,3}P", code):
+                assert system == "99NHANES", (f.name, "|".join(s))
+                seen += 1
+    assert seen

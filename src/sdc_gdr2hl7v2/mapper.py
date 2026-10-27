@@ -19,8 +19,10 @@ What a mapping file says, by its rules' `to`:
 
 HL7 v2 has no general null flavor. An observation whose value is an Exceptional Value is still sent, with OBX-5
 empty: Not Asked is OBX-11 `N` ("not asked", table 0085), preserved; every other code is OBX-11 `X` ("results
-cannot be obtained"), degraded, and an NTE after the OBX carries the ISO 21090 code and name. An Exceptional Value in
-any other field is lost: the field is left empty.
+cannot be obtained"), degraded, and an NTE after the OBX carries the ISO 21090 code and name. The answer of a cluster
+held as one OBX (a code, its text and its system in one CWE) is treated the same: an Exceptional Value in any part of it
+sends that OBX with OBX-5 empty, never a partial CWE (4.0.5). An Exceptional Value in any other field is lost: the field
+is left empty.
 """
 from __future__ import annotations
 
@@ -60,6 +62,7 @@ CANNOT_HOLD = [
 class _OBX:
     segment: Segment
     ntes: list[str] = field(default_factory=list)
+    exceptional: object = None    # an Exceptional Value in the OBX's answer (a cluster's OBX-5): set at assembly
 
 
 @dataclass
@@ -291,8 +294,21 @@ class HL7v2Mapper:
             raise MappingError(f"mapping {mapping.id}: {v.label} maps to {to!r}, which is not OBX, MSH-n, PID-n, OBR-n, "
                                "OBX-n or OBX*-n")
         seg_name, addr = m.groups()
+        if v.exceptional and seg_name == "OBX" and addr.split(".")[0] == "5" and obx_cluster is not None:
+            # the cluster's answer (a code, its text, its system) is the Exceptional Value: the OBX is sent with OBX-5
+            # empty and its result status saying why, as an observation's own value is (4.0.5); never a partial CWE
+            ev = EV_TABLE[v.exceptional.code]
+            if obx_cluster.exceptional is None:
+                obx_cluster.exceptional = v.exceptional
+                obx_cluster.ntes.append(escape(f"ISO 21090 null flavor {v.exceptional.code}: {v.exceptional.name}"))
+            return ValueOutcome(v.position, ev.cls, location=f"OBX({obx_cluster.segment.fields.get(3, [['']])[0][0]})-11",
+                                target_code=ev.target_code, merged_with=list(ev.merged_with),
+                                note="an NTE carries the ISO 21090 code")
         if v.exceptional:
             return ValueOutcome(v.position, LOST, location=to, note="HL7 v2 leaves the field empty")
+        if seg_name == "OBX" and addr.split(".")[0] == "5" and obx_cluster is not None and obx_cluster.exceptional:
+            return ValueOutcome(v.position, NOT_REPRESENTABLE, location=to,
+                                note="the answer is an Exceptional Value: OBX-5 is sent empty")
         text = _text(v)
         if transform == "constant":
             raw = const
@@ -355,6 +371,9 @@ class HL7v2Mapper:
             for k, entry in enumerate(g.members, start=1):
                 seg = entry.segment
                 seg.set("1", str(k))
+                if entry.exceptional is not None:
+                    seg.fields.pop(5, None)       # no partial answer: no code, no text, no coding system
+                    seg.set("11", EV_TABLE[entry.exceptional.code].target_code)
                 for addr, raw in g.defaults.items():
                     if not seg.has(addr):
                         seg.set(addr, raw)

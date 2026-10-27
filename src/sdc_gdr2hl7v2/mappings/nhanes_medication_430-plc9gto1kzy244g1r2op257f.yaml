@@ -1,0 +1,61 @@
+# NHANES Medication 4.3.0 (FAIR Data Demo) to HL7 v2.5.1 ORU^R01
+# Written by tools/build_mapping.py from tools/specs/nhanes_medication_430.py; labels in the comments.
+mapping:
+  id: nhanes-medication-4.3.0-hl7v2-2.5.1
+  version: 1
+  author: Axius SDC, Inc.
+  date: '2026-10-27'
+  description: 'The NHANES Medication 4.3.0 model''s values in an HL7 v2.5.1 ORU^R01 message: the reported medicine as an
+    OBR group of observations; each reason an ICD-10-CM CWE (I10C) or an NHANES prevention reason CWE (99NHANES, not ICD-10-CM);
+    an unknown, refused or don''t-know value as OBX-5 empty with OBX-11 X.'
+model:
+  ct_id: plc9gto1kzy244g1r2op257f
+  schema_sha256: 4924ad890240ccd1c140e715ad66af587cf64bf365efbd33704a99a6e95d877a
+target:
+  name: HL7 Version 2
+  version: 2.5.1
+rules:
+  # NHANES Medication Governed Record
+  - {cluster: rzlq0w15v4jci151pg5bdxpi, to: MSH, attributes: {MSH-3: SDC-GDR2HL7V2, MSH-4: FAIR Data Demo, MSH-11: T, PID-5: '""', OBX-11: F}}
+  # Audit Event
+  - {cluster: t2tvd3wylxrstdeu5aw6gkw1, to: '-', transform: omit, reason: 'the record''s audit event: an HL7 v2 message names its sending application, not the audit of the record'}
+  # PROV Activity
+  - {cluster: vmikfu0irht9fmq7q02t3oqs, to: '-', transform: omit, reason: 'the record''s provenance: HL7 v2 has no place for it'}
+  # PROV Agent
+  - {cluster: c179ilk2ns15cd5rzzdfd6f6, to: '-', transform: omit, reason: 'the record''s provenance: HL7 v2 has no place for it'}
+  # Respondent Sequence Number (SEQN)
+  - {component: uto4zszvpicva38wx77knz5y, to: PID-3, transform: format, format: '{}^^^NHANES^PI'}
+  # NHANES Medication
+  - {cluster: pgn54ip279evo9nxul6bsw2d, to: OBR}
+  # Generic Drug Code (RXDDRGID)
+  - {component: wypildaam8rrd87zkkjxl732, to: OBX, transform: format, format: '{}^^99RXD', attributes: {OBX-2: CWE}}
+  # Generic Drug Name (RXDDRUG)
+  - {component: aut5uvzn0y8wb9xj2ox2n4wh, to: OBX, transform: copy}
+  # Taken Prescription Medicine, Past Month (RXDUSE)
+  - {component: a1zr74c1vayeeglk54da7gaf, to: OBX, transform: copy}
+  # Number of Days Taken Medicine (RXDDAYS)
+  - {component: jybwb4302jxgp028dyk2cgmt, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Number of Prescription Medicines Taken (RXDCOUNT)
+  - {component: v28gzpjsaxkkgjm470icwipg, to: OBX, transform: copy, units: {to: '@6', transform: code, table: {'%': '%', '/100{WBCs}': '/100{WBCs}', /min: /min, '1': '1', 10*3/uL: 10*3/uL, 10*6/uL: 10*6/uL, cigarettes: '{cigarettes}', fL: fL, g/dL: g/dL, items: '{items}', mg/dL: mg/dL, mmHg: 'mm[Hg]', mmol/L: mmol/L, months: mo, pg: pg, years: a, days: d}}}
+  # Medication Reason 1
+  - {cluster: rgrfnzoti0vquavt7m32mf8k, to: ., order: 1}
+  # Medication Reason 2
+  - {cluster: zljaiuq15yi0ow5y1l7luzoy, to: ., order: 2}
+  # Medication Reason 3
+  - {cluster: mwmrnudjznage2exv6e8v0ws, to: ., order: 3}
+  # Diagnosis (ICD-10-CM)
+  - {cluster: eijlau8c1zoa8fbw8fmy0ir4, to: OBX, attributes: {OBX-2: CWE, OBX-5.3: I10C}}
+  # Diagnosis Code (ICD-10-CM)
+  - {component: km7yfw4egxchlb92ya8cqurd, to: OBX-5.1, transform: copy}
+  # Code Display Text (within Diagnosis (ICD-10-CM))
+  - {component: eo5tlfr0576ypknys5alvcn0, within: [eijlau8c1zoa8fbw8fmy0ir4], to: OBX-5.2, transform: copy}
+  # Code System: ICD-10-CM
+  - {component: jwgx8nvbtsim7ck4uqmpqyl2, to: OBX-5.3, transform: code, table: {'http://hl7.org/fhir/sid/icd-10-cm': I10C}, on_miss: omit}
+  # Prevention Reason (NHANES)
+  - {cluster: fyurnfjn767pebwima5aq1ek, to: OBX, attributes: {OBX-2: CWE, OBX-5.3: 99NHANES}}
+  # Prevention Reason Code (NHANES)
+  - {component: fkfgjboicxhcx4j0l7jhqw42, to: OBX-5.1, transform: copy}
+  # Code Display Text (within Prevention Reason (NHANES))
+  - {component: eo5tlfr0576ypknys5alvcn0, within: [fyurnfjn767pebwima5aq1ek], to: OBX-5.2, transform: copy}
+  # Code System: NHANES Prevention Reason
+  - {component: m5mmhesnjwbf52fwdo8jzqxp, to: OBX-5.3, transform: code, table: {'https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/RXQ_RX_J.htm': 99NHANES}, on_miss: omit}

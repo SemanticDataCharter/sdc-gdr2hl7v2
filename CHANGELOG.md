@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.0.5 (2026-10-27)
+
+Site profiles for the FAIR Data Demo 4.3.0 models, NHANES Participant 4.3.0 (`drjvqb171q9pqwcdq6nxxrr4`) and NHANES
+Medication 4.3.0 (`plc9gto1kzy244g1r2op257f`), whose refused and don't-know answers are Exceptional Values (ASKR, ASKU;
+the medication file's 55555, 77777 and 99999 are UNK, ASKR and ASKU).
+
+- **An Exceptional Value is never sent as an answer.** An observation whose answer is one goes out with OBX-5 empty,
+  OBX-11 `X` (table 0085, "results cannot be obtained") and an NTE naming the ISO 21090 code; Not Asked is OBX-11 `N`.
+- **Fix: a coded cluster's answer.** A cluster held as one CWE (a code, its text and its system) whose code was an
+  Exceptional Value went out as a partial CWE: a medication reason NHANES records as unknown was `^^I10C` with status
+  `F`, an empty ICD-10-CM answer presented as final (27 in the 200-record sample). It is now OBX-5 empty, OBX-11 `X`
+  and the NTE, as any exceptional answer.
+- **NHANES's prevention reason codes are not ICD-10-CM.** `I21.P` (prevent heart attack) goes out as a CWE in a coding
+  system local to NHANES, `99NHANES` (table 0396's 99zzz), never `I10C`.
+- Samples: the 4.2.4 sample's 200 participants on 4.3.0 (16 with an Exceptional Value), and 200 medication records
+  (47 with a prevention code, 44 with an Exceptional Value). Every message passes strict hl7apy validation. The earlier
+  mappings and samples stay: records made on the retired models still map.
+
 ## 4.0.4 (2026-10-26)
 
 A site profile for NHANES Participant 4.2.4 (`tp5pg0u4dasqarie0b3ujn2u`), the FAIR Data Demo's revision whose value
