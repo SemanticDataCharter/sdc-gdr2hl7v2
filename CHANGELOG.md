@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.0.6 (2026-10-27)
+
+- **FAIR Data Demo 4.3.1:** NHANES Participant 4.3.1 (`fafj69kdii37997sy7dpsz13`): its mapping and a sample of the
+  same 200 participants as the 4.3.0 sample. 4.3.1's four NIH CDE answers carry their compound concept as
+  `dcterms:subject` parts, with no exact-match claim (NIH CDE library R-2026-10-27). OBX-3 reads only a component's
+  LOINC exact match, and those concepts are NCI Thesaurus, so no message changes: a new test holds that every 4.3.1
+  message is the 4.3.0 one apart from identifiers. Every message passes strict hl7apy validation. The 4.3.0 mapping
+  stays, for records made on that model.
+
 ## 4.0.5 (2026-10-27)
 
 Site profiles for the FAIR Data Demo 4.3.0 models, NHANES Participant 4.3.0 (`drjvqb171q9pqwcdq6nxxrr4`) and NHANES
